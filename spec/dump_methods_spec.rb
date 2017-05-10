@@ -13,6 +13,87 @@ describe SeedDump do
       output + data.join(",\n  ") + "\n])\n"
   end
 
+  describe '::set_inclusions' do
+    context '"include" is not given' do
+      let(:options) do
+        { exclude: [:id, :created_at, :updated_at] }
+      end
+
+      it 'does not change "options"' do
+        SeedDump.send(:set_inclusions, options)
+        options.should eq exclude: [:id, :created_at, :updated_at]
+      end
+    end
+
+    context '"include" values is empty' do
+      let(:options) do
+        { exclude: [:id, :created_at, :updated_at], include: [] }
+      end
+
+      it 'does not change "options' do
+        SeedDump.send(:set_inclusions, options)
+        options.should eq(exclude: [:id, :created_at, :updated_at], include: [])
+      end
+    end
+
+    context '"include" values are on the "exclude" values list' do
+      let(:options) do
+        { exclude: [:id, :created_at, :updated_at],
+          include: [:id, :created_at] }
+      end
+
+      it 'returns value not on the "include" values list' do
+        SeedDump.send(:set_inclusions, options)
+        options.should eq(
+          exclude: [:updated_at],
+          include: [:id, :created_at])
+      end
+    end
+
+    context '"include" values are not on the "exclude" values list' do
+      let(:options) do
+        { exclude: [:id, :created_at, :updated_at],
+          include: [:hoge, :fuga] }
+      end
+
+      it 'does not change "option"' do
+        SeedDump.send(:set_inclusions, options)
+        options.should eq(
+          exclude: [:id, :created_at, :updated_at],
+          include: [:hoge, :fuga])
+      end
+    end
+  end
+
+  describe '::set_exclusions' do
+    context 'exclude key has no value' do
+      let(:options) { { exclude: nil } }
+
+      it '"exclude" values is default' do
+        SeedDump.send(:set_exclusions, options)
+        options.should eq(exclude: [:id, :created_at, :updated_at])
+      end
+    end
+
+    context '"exclude" key has only one value' do
+      let(:options) { { exclude: [:foo] } }
+
+      it 'returns given options' do
+        SeedDump.send(:set_exclusions, options)
+        options.should eq(exclude: [:foo])
+      end
+    end
+
+    context '"exclude" key has more than one value' do
+      let(:options) { { exclude: [:foo, :bar] } }
+
+      it 'returns given options' do
+        SeedDump.send(:set_exclusions, options)
+        options.should eq(exclude: [:foo, :bar])
+      end
+    end
+  end
+
   describe '.dump' do
     before do
       Rails.application.eager_load!

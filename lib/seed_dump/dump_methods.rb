@@ -16,13 +16,20 @@ class SeedDump
     private
 
     def dump_record(record, options)
+      attributes = {}
       attribute_strings = []
 
       # We select only string attribute names to avoid conflict
       # with the composite_primary_keys gem (it returns composite
       # primary key attribute names as hashes).
       record.attributes.select {|key| key.is_a?(String) }.each do |attribute, value|
-        attribute_strings << dump_attribute_new(attribute, value, options) unless options[:exclude].include?(attribute.to_sym)
+        attributes[attribute] = value unless options[:exclude].include?(attribute.to_sym)
+      end
+
+      options[:includes].each { |attribute, value| attributes[attribute.to_s] = value } if options[:includes].present?
+
+      attributes.each do |attribute, value|
+        attribute_strings << dump_attribute_new(attribute, value, options)
       end
 
       open_character, close_character = options[:import] ? ['[', ']'] : ['{', '}']
@@ -44,6 +51,8 @@ class SeedDump
                 range_to_string(value)
               when ->(v) { v.class.ancestors.map(&:to_s).include?('RGeo::Feature::Instance') }
                 value.to_s
+              when Proc
+                value.call
               else
                 value
               end
